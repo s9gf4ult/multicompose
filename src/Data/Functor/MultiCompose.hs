@@ -32,7 +32,8 @@ type Applied functors applied a = Applied' (Length functors) functors applied a
 data MultiCompose fs a where
   MultiCompose
     :: (Applied fs app a)
-    => app
+    => Proxy fs
+    -> app
     -> MultiCompose fs a
 
 -- deriving instance (Eq app, Applied f app a) => Eq (MultiCompose f a)
@@ -42,5 +43,11 @@ data MultiCompose fs a where
 --   => Functor (MultiCompose '[f]) where
 --   fmap f (MultiCompose fa) = MultiCompose $ fmap f fa
 
-fmapComp :: (a -> b) -> MultiCompose '[f] a -> MultiCompose '[f] b
-fmapComp f (MultiCompose fa) = MultiCompose $ fmap f fa
+fmapComp
+  :: forall a b f
+  .  (Functor f)
+  => (a -> b)
+  -> MultiCompose '[f] a
+  -> MultiCompose '[f] b
+fmapComp f (MultiCompose fs fa) =
+  MultiCompose fs $ fmap f (asProxyTypeOf fa (applied fs (Proxy :: Proxy a)))
