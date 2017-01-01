@@ -10,10 +10,10 @@ import TypeFun.Data.Peano
 class
   (len ~ Length functors)
   => Applied' len (functors :: [* -> *]) (applied :: *) (a :: *)
-  | len functors a -> applied, len applied a -> functors, functors applied -> a
+  | functors a -> applied, len applied a -> functors, functors applied -> a
 
 instance
-  Applied' ('S 'Z) (f ': '[]) (f a) a
+  Applied' ('S 'Z) '[f] (f a) a
 
 instance
   Applied' ('S len) (f2 ': rest) (f2 restapps) a
@@ -21,8 +21,19 @@ instance
 
 type Applied functors applied a = Applied' (Length functors) functors applied a
 
-data MultiCompose (functors :: [* -> *]) (a :: *) where
+data MultiCompose fs a where
   MultiCompose
-    :: (Applied functors applied a)
-    => applied
-    -> MultiCompose functors a
+    :: (Applied fs app a)
+    => app
+    -> MultiCompose fs a
+
+-- deriving instance (Eq app, Applied f app a) => Eq (MultiCompose f a)
+
+-- instance
+--   (Functor f)
+--   => Functor (MultiCompose '[f]) where
+--   fmap f (MultiCompose fa) = MultiCompose $ fmap f fa
+
+fmapComp :: (a -> b) -> MultiCompose '[f] a -> MultiCompose '[f] b
+fmapComp f (MultiCompose fa) = MultiCompose $ fmap f fa
+-- fmapComp f (MultiCompose fa) = MultiCompose _

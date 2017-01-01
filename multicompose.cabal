@@ -27,6 +27,8 @@ library
                      , KindSignatures
                      , MultiParamTypeClasses
                      , PolyKinds
+                     , ScopedTypeVariables
+                     , StandaloneDeriving
                      , TypeFamilies
                      , TypeOperators
                      , UndecidableInstances
