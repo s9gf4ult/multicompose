@@ -3,21 +3,30 @@ module Data.Functor.MultiCompose where
 import TypeFun.Data.List
 import TypeFun.Data.Peano
 
+type family ApplyHelper (fs :: [* -> *]) (a :: *) :: * where
+  ApplyHelper '[] a = a
+  ApplyHelper (f ': fs) a = f (ApplyHelper fs a)
+
+type family DeapplyHelper (applied :: *) (len :: N) :: [* -> *] where
+  DeapplyHelper a 'Z = '[]
+  DeapplyHelper (f rest) ('S len) = f ': (DeapplyHelper rest len)
+
 -- | Typeclass providing bidirectional type inference:
 --
 -- 1. We can derive list of functors from agument applied to 'MultiCompose'
 -- 2. We can derive argument of 'MultiCompose' from functors list
 class
-  (len ~ Length functors)
+  ( len ~ Length functors
+  , ApplyHelper functors a ~ applied
+  , DeapplyHelper applied len ~ functors )
   => Applied' len (functors :: [* -> *]) (applied :: *) (a :: *)
-  | functors a -> applied, len applied a -> functors, functors applied -> a
+  | functors a -> applied, len applied a -> functors, functors applied -> a where
+
+instance Applied' 'Z '[] a a where
 
 instance
-  Applied' ('S 'Z) '[f] (f a) a
-
-instance
-  Applied' ('S len) (f2 ': rest) (f2 restapps) a
-  => Applied' ('S ('S len)) (f ': f2 ': rest) (f (f2 restapps)) a
+  Applied' len rest restapps a
+  => Applied' ('S len) (f ': rest) (f restapps) a where
 
 type Applied functors applied a = Applied' (Length functors) functors applied a
 
@@ -27,13 +36,22 @@ data MultiCompose fs a where
     => app
     -> MultiCompose fs a
 
--- deriving instance (Eq app, Applied f app a) => Eq (MultiCompose f a)
+getMultiCompose :: MultiCompose fs a -> ApplyHelper fs a
+getMultiCompose (MultiCompose app) = app
+
+deriving instance (Eq app, Applied f app a) => Eq (MultiCompose f a)
+deriving instance (Ord app, Applied f app a) => Ord (MultiCompose f a)
+
+instance
+  Functor (MultiCompose '[]) where
+  fmap f (MultiCompose a) = MultiCompose $ f a
 
 -- instance
---   (Functor f)
---   => Functor (MultiCompose '[f]) where
---   fmap f (MultiCompose fa) = MultiCompose $ fmap f fa
+--   (Functor (MultiCompose rest), Functor f) =>
+--   Functor (MultiCompose (f ': rest)) where
+--   fmap f (MultiCompose fa) =
+--     MultiCompose $ fmap _ fa
 
-fmapComp :: (a -> b) -> MultiCompose '[f] a -> MultiCompose '[f] b
-fmapComp f (MultiCompose fa) = MultiCompose $ fmap f fa
--- fmapComp f (MultiCompose fa) = MultiCompose _
+-- fmapComp :: (a -> b) -> MultiCompose '[f] a -> MultiCompose '[f] b
+-- fmapComp f (MultiCompose fa) = MultiCompose $ fmap f fa
+-- -- fmapComp f (MultiCompose fa) = MultiCompose _
