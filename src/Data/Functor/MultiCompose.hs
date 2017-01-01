@@ -2,6 +2,7 @@ module Data.Functor.MultiCompose where
 
 import TypeFun.Data.List
 import TypeFun.Data.Peano
+import Data.Proxy
 
 -- | Typeclass providing bidirectional type inference:
 --
@@ -10,14 +11,21 @@ import TypeFun.Data.Peano
 class
   (len ~ Length functors)
   => Applied' len (functors :: [* -> *]) (applied :: *) (a :: *)
-  | functors a -> applied, len applied a -> functors, functors applied -> a
+  | functors a -> applied, len applied -> functors, functors applied -> a where
+  functors :: Proxy applied -> Proxy functors
+  applied :: Proxy functors -> Proxy a -> Proxy applied
 
 instance
-  Applied' ('S 'Z) '[f] (f a) a
+  (app ~ f a, fs ~ '[f])
+  => Applied' ('S 'Z) fs app a where
+  functors _ = Proxy
+  applied _ _ = Proxy
 
 instance
-  Applied' ('S len) (f2 ': rest) (f2 restapps) a
-  => Applied' ('S ('S len)) (f ': f2 ': rest) (f (f2 restapps)) a
+  (Applied' ('S len) rest restapps a, fs ~ (f ': rest), app ~ f restapps)
+  => Applied' ('S ('S len)) fs app a where
+  functors _ = Proxy
+  applied _ _ = Proxy
 
 type Applied functors applied a = Applied' (Length functors) functors applied a
 
@@ -36,4 +44,3 @@ data MultiCompose fs a where
 
 fmapComp :: (a -> b) -> MultiCompose '[f] a -> MultiCompose '[f] b
 fmapComp f (MultiCompose fa) = MultiCompose $ fmap f fa
--- fmapComp f (MultiCompose fa) = MultiCompose _
