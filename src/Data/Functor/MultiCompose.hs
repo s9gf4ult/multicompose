@@ -11,14 +11,18 @@ type family DeapplyHelper (applied :: *) (len :: N) :: [* -> *] where
   DeapplyHelper a 'Z = '[]
   DeapplyHelper (f rest) ('S len) = f ': (DeapplyHelper rest len)
 
+type ApplyConstraint len functors applied a =
+  ( len ~ Length functors
+  , ApplyHelper functors a ~ applied
+  , DeapplyHelper applied len ~ functors
+  )
+
 -- | Typeclass providing bidirectional type inference:
 --
 -- 1. We can derive list of functors from agument applied to 'MultiCompose'
 -- 2. We can derive argument of 'MultiCompose' from functors list
 class
-  ( len ~ Length functors
-  , ApplyHelper functors a ~ applied
-  , DeapplyHelper applied len ~ functors )
+  ( ApplyConstraint len functors applied a )
   => Applied' len (functors :: [* -> *]) (applied :: *) (a :: *)
   | functors a -> applied, len applied a -> functors, functors applied -> a where
 
@@ -47,7 +51,8 @@ instance
   fmap f (MultiCompose a) = MultiCompose $ f a
 
 -- instance
---   (Functor (MultiCompose rest), Functor f) =>
+--   ( Functor (MultiCompose rest), Functor f, functors ~ f ': rest
+--   , ApplyConstraint (Length functors) functors appb b ) =>
 --   Functor (MultiCompose (f ': rest)) where
 --   fmap f (MultiCompose fa) =
 --     MultiCompose $ fmap _ fa
