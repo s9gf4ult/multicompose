@@ -22,13 +22,20 @@ class
   ) =>
   Composable' len (functors :: [* -> *]) (applied :: *) (a :: *)
   | functors a -> applied, len applied a -> functors, functors applied -> a where
+  compose :: applied -> MultiCompose functors a
+  decompose :: MultiCompose functors a -> applied
 
 instance Composable' 'Z '[] a a where
+  compose a = MCEmpty a
+  decompose (MCEmpty a) = a
 
 instance
   ( Composable' len rest restapps a
+  , Functor f
   ) =>
   Composable' ('S len) (f ': rest) (f restapps) a where
+  compose app = MCApply $ fmap compose app
+  decompose (MCApply a) = fmap decompose a
 
 type Composable functors applied a =
   Composable' (Length functors) functors applied a
