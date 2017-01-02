@@ -16,10 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Data.Functor.MultiCompose
+  ghc-options:        -Wall
   build-depends:       base >= 4.7 && < 5
                      , type-fun
   default-extensions:  ConstraintKinds
                      , DataKinds
+                     , DeriveGeneric
                      , FlexibleContexts
                      , FlexibleInstances
                      , FunctionalDependencies
