@@ -35,20 +35,28 @@ instance
 type Applied functors applied a = Applied' (Length functors) functors applied a
 
 data MultiCompose fs a where
-  MultiCompose
-    :: (Applied fs app a)
-    => app
-    -> MultiCompose fs a
-
-getMultiCompose :: MultiCompose fs a -> ApplyHelper fs a
-getMultiCompose (MultiCompose app) = app
-
-deriving instance (Eq app, Applied f app a) => Eq (MultiCompose f a)
-deriving instance (Ord app, Applied f app a) => Ord (MultiCompose f a)
+  MCEmpty :: a -> MultiCompose '[] a
+  MCApply :: f (MultiCompose rest a) -> MultiCompose (f ': rest) a
 
 instance
   Functor (MultiCompose '[]) where
-  fmap f (MultiCompose a) = MultiCompose $ f a
+  fmap f (MCEmpty a) = MCEmpty $ f a
+
+instance
+  (Functor f, Functor (MultiCompose rest)) =>
+  Functor (MultiCompose (f ': rest)) where
+  fmap f (MCApply fa) = MCApply $ fmap (fmap f) fa
+
+instance
+  Applicative (MultiCompose '[]) where
+  pure = MCEmpty
+  MCEmpty f <*> MCEmpty a = MCEmpty $ f a
+
+instance
+  (Applicative f, Applicative (MultiCompose rest)) =>
+  Applicative (MultiCompose (f ': rest)) where
+  pure a = MCApply $ pure $ pure a
+  MCApply f <*> MCApply a = MCApply $ _ <*> _
 
 -- instance
 --   ( Functor (MultiCompose rest), Functor f, functors ~ f ': rest
